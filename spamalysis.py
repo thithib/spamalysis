@@ -23,8 +23,8 @@ def main():
                 fullFilename = os.path.join(root, filename)
                 indexName = fullFilename.split('/')[-2]
                 with open(fullFilename, 'r') as f:
-                    mail = str(f.read())
-                jsonMail = parseMail(mail)
+                    rawMail = str(f.read())
+                jsonMail = parseMail(rawMail)
                 if jsonMail:
                     if not indexMail(jsonMail, indexName, str(sys.argv[2]), str(sys.argv[3])):
                         sys.stderr.write("Error when indexing mail " + fullFilename + "\n")
