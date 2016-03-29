@@ -22,8 +22,8 @@ def main():
             if filename.endswith(".mail"):
                 fullFilename = os.path.join(root, filename)
                 indexName = fullFilename.split('/')[-2]
-                with open(fullFilename, 'r') as f:
-                    rawMail = str(f.read())
+                with open(fullFilename, 'r', encoding = "ISO-8859-1") as f:
+                    rawMail = f.read()
                 jsonMail = parseMail(rawMail)
                 if jsonMail:
                     if not indexMail(jsonMail, indexName, str(sys.argv[2]), str(sys.argv[3])):
