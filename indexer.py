@@ -30,15 +30,16 @@ class Spam(DocType):
 
 
 def indexMail(jsonMail, indexName, nodeIP, nodePort):
-    '''Try connecting to the Elasticsearch node'''
+    
+    # Try connecting to the Elasticsearch node
     try:
         connections.create_connection(hosts=[nodeIP+':'+str(nodePort)],timeout=3)
    
-        '''Create the mapping if the index doesn't exist'''
+        # Create the mapping if the index doesn't exist
         if not Index(indexName).exists():
             Spam.init(index=indexName)
     
-        '''Create a new mail and initialize it'''
+        # Create a new mail and initialize it
         newMail = Spam(X_Envelope_From=jsonMail['X-Envelope-From'])
         newMail.X_Envelope_To = jsonMail['X-Envelope-To']
         newMail.X_Spam_Flag = jsonMail['X-Spam-Flag']
@@ -55,10 +56,13 @@ def indexMail(jsonMail, indexName, nodeIP, nodePort):
         newMail.Subject = jsonMail['Subject']
         #newMail.Message = jsonMail['Message']
     
-        '''Overwrite the index name for the new mail'''
+        # Overwrite the index name for the new mail
         newMail.meta.index = indexName
-
-        return newMail.save()
+        # Save index
+        result = newMail.save()
+        # Close connection to Elasticsearh node
+        connections.remove_connection('default')
+        return result
 
     except ConnectionError:
         return False

@@ -48,7 +48,7 @@ def parseMail(rawMail):
         'To': getMailHeader(msg.get('To','')),
         'Date': getMailHeader(msg.get('Date','')),
         'From': getMailHeader(msg.get('From','')),
-        'Reply-to': getMailHeader(msg.get('Reply-to','')),
+        'Reply-To': getMailHeader(msg.get('Reply-To','')),
         'X-Priority': int(getMailHeader(msg.get('X-Priority',''))),
         'MIME-Version': float(getMailHeader(msg.get('MIME-Version',''))),
         'Subject': getMailHeader(msg.get('Subject','')),
