@@ -17,7 +17,7 @@ class Spam(DocType):
     X_Priority = Integer()
     #X_Mailer = String()
     MIME_Version = Float()
-    Content_Transfer_Encoding = Integer()
+    Content_Transfer_Encoding = String()
     Content_Type = String()
     Subject = String()
     #Message = String()
