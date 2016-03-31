@@ -50,23 +50,45 @@ def parseDate(date):
         return parsedDate
 
 def parseMail(rawMail):
-    """Parse the mail"""
+    """Split headers and body and send them to the corresponding parser"""
     msg = email.message_from_string(rawMail)
-    obj = dict()
 
-    obj['X-Envelope-From'] = purgeBrackets(getMailHeader(msg.get('X-Envelope-From', ''))) or 'EMPTY'
-    obj['X-Envelope-To'] = purgeBrackets(getMailHeader(msg.get('X-Envelope-TO', ''))) or 'EMPTY'
-    obj['X-Spam-Flag'] = getMailHeader(msg.get('X-Spam-Flag', '')) or 'EMPTY'
-    obj['X-Spam-Score'] = float(getMailHeader(msg.get('X-Spam-Score', '')))
-    obj['To'] = purgeBrackets(getMailHeader(msg.get('To', ''))) or 'EMPTY'
-    obj['Date'] = parseDate(getMailHeader(msg.get('Date', '')))
-    obj['From'] = str(getMailHeader(msg.get('From', '')) or 'EMPTY')
-    obj['Reply-To'] = str(getMailHeader(msg.get('Reply-To', '')) or 'EMPTY')
-    obj['X-Priority'] = int((getMailHeader(msg.get('X-Priority', '')) or '0')[0])
-    obj['MIME-Version'] = float(getMailHeader(msg.get('MIME-Version', '')))
-    obj['Subject'] = getMailHeader(msg.get('Subject', '')) or 'EMPTY'
-    obj['Content-Transfer-Encoding'] = getMailHeader(msg.get('Content-Transfer-Encoding', '')) or 'EMPTY'
-    obj['Content-Type'] = getMailHeader(msg.get('Content-Type', '')) or 'EMPTY'
+    # Getting mail body requires a trick
+    msgBody = str()
+    if msg.is_multipart():
+        for payload in msg.get_payload():
+            msgBody += str(payload.get_payload())
+    else:
+        msgBody = msg.get_payload()
 
-    return obj
+    # Headers are directly reachable
+    jsonMail = parseHeaders(msg)
+    jsonMail.update(parseBody(msgBody))
+
+    return jsonMail
+
+def parseHeaders(msg):
+    """Parse mail headers into a dictionnary"""
+    headers = dict()
+    headers['X-Envelope-From'] = purgeBrackets(getMailHeader(msg.get('X-Envelope-From', ''))) or 'EMPTY'
+    headers['X-Envelope-To'] = purgeBrackets(getMailHeader(msg.get('X-Envelope-TO', ''))) or 'EMPTY'
+    headers['X-Spam-Flag'] = getMailHeader(msg.get('X-Spam-Flag', '')) or 'EMPTY'
+    headers['X-Spam-Score'] = float(getMailHeader(msg.get('X-Spam-Score', '')))
+    headers['To'] = purgeBrackets(getMailHeader(msg.get('To', ''))) or 'EMPTY'
+    headers['Date'] = parseDate(getMailHeader(msg.get('Date', '')))
+    headers['From'] = str(getMailHeader(msg.get('From', '')) or 'EMPTY')
+    headers['Reply-To'] = str(getMailHeader(msg.get('Reply-To', '')) or 'EMPTY')
+    headers['X-Priority'] = int((getMailHeader(msg.get('X-Priority', '')) or '0')[0])
+    headers['MIME-Version'] = str(getMailHeader(msg.get('MIME-Version', '')))
+    headers['Subject'] = getMailHeader(msg.get('Subject', '')) or 'EMPTY'
+    headers['Content-Transfer-Encoding'] = getMailHeader(msg.get('Content-Transfer-Encoding', '')) or 'EMPTY'
+    headers['Content-Type'] = getMailHeader(msg.get('Content-Type', '')) or 'EMPTY'
+
+    return headers
+
+def parseBody(mailBody):
+    """Parse mail body"""
+    body = dict()
+    body['body'] = mailBody
+    return body
 
