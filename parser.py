@@ -82,8 +82,12 @@ def parseHeaders(msg):
     headers['MIME-Version'] = str(getMailHeader(msg.get('MIME-Version', '')))
     headers['Subject'] = getMailHeader(msg.get('Subject', '')) or 'EMPTY'
     headers['Content-Transfer-Encoding'] = getMailHeader(msg.get('Content-Transfer-Encoding', '')) or 'EMPTY'
-    headers['Content-Type'] = getMailHeader(msg.get('Content-Type', '')) or 'EMPTY'
-
+    headers['Content-Type'] = getMailHeader(msg.get_content_type()) or 'EMPTY'
+    headers['Charset'] = getMailHeader(msg.get_content_charset('')) or 'EMPTY'
+    #TODO
+    #headers['Content-Disposition'] = getMailHeader(msg.get_content_disposition()) or 'EMPTY'
+    #print(getMailHeader(msg.get_charsets('') or 'EMPTY'))
+    boundary = msg.get_boundary('')
     return headers
 
 def parseBody(mailBody):
