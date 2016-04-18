@@ -9,6 +9,7 @@ from analyzers import emailAnalyzer
 class Spam(DocType):
     X_Envelope_From = Nested(
         properties={
+            'header':String(),
             'email':String(),
             'localpart':String(),
             'domain':String()
@@ -21,6 +22,7 @@ class Spam(DocType):
     Date = Date()
     From = Nested(
         properties={
+            'header':String(),
             'email':String(),
             'localpart':String(),
             'domain':String()
@@ -55,7 +57,7 @@ def indexMail(jsonMail, indexName, nodeIP, nodePort):
     
         # Create a new mail and initialize it
         if (jsonMail['X-Envelope-From'] != "EMPTY"):
-            newMail = Spam(X_Envelope_From=jsonMail['X-Envelope-From'])
+            newMail = Spam(X_Envelope_From.header=jsonMail['X-Envelope-From'])
             analyzingResult = emailAnalyzer(jsonMail['X-Envelope-From'])
             newMail.X_Envelope_From.email = analyzingResult[0]
             newMail.X_Envelope_From.localpart = analyzingResult[1]
@@ -67,7 +69,7 @@ def indexMail(jsonMail, indexName, nodeIP, nodePort):
         if (jsonMail['To'] != "EMPTY"):
             newMail.To = jsonMail['To']
         if (jsonMail['From'] != "EMPTY"):
-            newMail.From = jsonMail['From']
+            newMail.From.header = jsonMail['From']
             analyzingResult = emailAnalyzer(jsonMail['From'])
             newMail.From.email = analyzingResult[0]
             newMail.From.localpart = analyzingResult[1]
