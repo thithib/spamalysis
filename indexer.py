@@ -4,15 +4,28 @@
 from elasticsearch_dsl import DocType, Index, String, Date, Integer, Boolean, Float
 from elasticsearch_dsl.connections import connections
 from elasticsearch.exceptions import ConnectionError
+from analyzers import analyseEmail
 
 class Spam(DocType):
-    X_Envelope_From = String()
+    X_Envelope_From = Nested(
+        properties={
+            'email'=String(),
+            'localpart'=String(),
+            'domain'=String()
+        }
+    )
     X_Envelope_To = String()
     X_Spam_Flag = Boolean()
     X_Spam_Score = Float()
     To = String()
     Date = Date()
-    From = String()
+    From = Nested(
+        properties={
+            'email'=String(),
+            'localpart'=String(),
+            'domain'=String()
+        }
+    ) 
     Reply_To = String()
     X_Priority = Integer()
     #X_Mailer = String()
@@ -24,6 +37,7 @@ class Spam(DocType):
 
     class Meta:
         index = 'default_index'
+        doc_type = 'spam'
 
     def save(self, ** kwargs):
         return super(Spam,self).save(** kwargs)
@@ -40,20 +54,37 @@ def indexMail(jsonMail, indexName, nodeIP, nodePort):
             Spam.init(index=indexName)
     
         # Create a new mail and initialize it
-        newMail = Spam(X_Envelope_From=jsonMail['X-Envelope-From'])
-        newMail.X_Envelope_To = jsonMail['X-Envelope-To']
-        newMail.X_Spam_Flag = jsonMail['X-Spam-Flag']
+        if (jsonMail['X-Envelope-From'] != "EMPTY"):
+            newMail = Spam(X_Envelope_From=jsonMail['X-Envelope-From'])
+            analyzingResult = analyzeEmail(jsonMail['X-Envelope-From'])
+            newMail.X_Envelope_From.email = analyzingResult[0]
+            newMail.X_Envelope_From.localpart = analyzingResult[1]
+            newMail.X_Envelope_From.domain = analyzingResult[2]
+        if (jsonMail['X-Envelope-To'] != "EMPTY"):
+            newMail.X_Envelope_To = jsonMail['X-Envelope-To']
+        if (jsonMail['X-Spam-Flag'] != "EMPTY"):
+            newMail.X_Spam_Flag = jsonMail['X-Spam-Flag']
+        if (jsonMail['To'] != "EMPTY"):
+            newMail.To = jsonMail['To']
+        if (jsonMail['From'] != "EMPTY"):
+            newMail.From = jsonMail['From']
+            analyzingResult = analyzeEmail(jsonMail['From'])
+            newMail.From.email = analyzingResult[0]
+            newMail.From.localpart = analyzingResult[1]
+            newMail.From.domain = analyzingResult[2]
+        if (jsonMail['Reply-To'] != "EMPTY"):
+            newMail.Reply_To = jsonMail['Reply-To']
+        if (jsonMail['Content-Transfer-Encoding'] != "EMPTY"):
+            newMail.Content_Transfer_Encoding = jsonMail['Content-Transfer-Encoding']
+        if (jsonMail['Content-Type'] != "EMPTY"):
+            newMail.Content_Type = jsonMail['Content-Type']
+        if (jsonMail['Subject'] != "EMPTY") :
+            newMail.Subject = jsonMail['Subject']
         newMail.X_Spam_Score = jsonMail['X-Spam-Score']
-        newMail.To = jsonMail['To']
         newMail.Date = jsonMail['Date']
-        newMail.From = jsonMail['From']
-        newMail.Reply_To = jsonMail['Reply-To']
         newMail.X_Priority = jsonMail['X-Priority']
-        #newMail.X_Mailer = jsonMail['X-Mailer']
         newMail.MIME_Version = jsonMail['MIME-Version']
-        newMail.Content_Transfer_Encoding = jsonMail['Content-Transfer-Encoding']
-        newMail.Content_Type = jsonMail['Content-Type']
-        newMail.Subject = jsonMail['Subject']
+        #newMail.X_Mailer = jsonMail['X-Mailer']
         #newMail.Message = jsonMail['Message']
     
         # Overwrite the index name for the new mail
