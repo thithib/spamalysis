@@ -2,10 +2,13 @@
 # -*-coding:Utf-8 -*
 
 import re
-import email
 from time import strptime, strftime
+
+import email
 from email.utils import parseaddr
 from email.header import decode_header
+
+from processer import processBody
 
 
 def getMailHeader(header_text, default="ascii"):
@@ -63,36 +66,34 @@ def parseMail(rawMail):
 
     # Headers are directly reachable
     jsonMail = parseHeaders(msg)
-    jsonMail.update(parseBody(msgBody))
+    jsonMail.update(parseBody(msgBody, jsonMail))
 
     return jsonMail
 
 def parseHeaders(msg):
     """Parse mail headers into a dictionnary"""
     headers = dict()
-    headers['X-Envelope-From'] = purgeBrackets(getMailHeader(msg.get('X-Envelope-From', ''))) or 'EMPTY'
-    headers['X-Envelope-To'] = purgeBrackets(getMailHeader(msg.get('X-Envelope-TO', ''))) or 'EMPTY'
-    headers['X-Spam-Flag'] = getMailHeader(msg.get('X-Spam-Flag', '')) or 'EMPTY'
+    headers['X-Envelope-From'] = str(getMailHeader(msg.get('X-Envelope-From', ''))) or 'EMPTY'
+    headers['X-Envelope-To'] = str(getMailHeader(msg.get('X-Envelope-TO', ''))) or 'EMPTY'
+    headers['X-Spam-Flag'] = str(getMailHeader(msg.get('X-Spam-Flag', ''))) or 'EMPTY'
     headers['X-Spam-Score'] = float(getMailHeader(msg.get('X-Spam-Score', '')))
-    headers['To'] = purgeBrackets(getMailHeader(msg.get('To', ''))) or 'EMPTY'
-    headers['Date'] = parseDate(getMailHeader(msg.get('Date', '')))
+    headers['To'] = str(getMailHeader(msg.get('To', ''))) or 'EMPTY'
+    headers['Date'] = parseDate(str(getMailHeader(msg.get('Date', ''))))
     headers['From'] = str(getMailHeader(msg.get('From', '')) or 'EMPTY')
     headers['Reply-To'] = str(getMailHeader(msg.get('Reply-To', '')) or 'EMPTY')
     headers['X-Priority'] = int((getMailHeader(msg.get('X-Priority', '')) or '0')[0])
     headers['MIME-Version'] = str(getMailHeader(msg.get('MIME-Version', '')))
-    headers['Subject'] = getMailHeader(msg.get('Subject', '')) or 'EMPTY'
-    headers['Content-Transfer-Encoding'] = getMailHeader(msg.get('Content-Transfer-Encoding', '')) or 'EMPTY'
-    headers['Content-Type'] = getMailHeader(msg.get_content_type()) or 'EMPTY'
-    headers['Charset'] = getMailHeader(msg.get_content_charset('')) or 'EMPTY'
+    headers['Subject'] = str(getMailHeader(msg.get('Subject', ''))) or 'EMPTY'
+    headers['Content-Transfer-Encoding'] = str(getMailHeader(msg.get('Content-Transfer-Encoding', ''))) or 'EMPTY'
+    headers['Content-Type'] = str(msg.get_content_type()) or 'EMPTY'
+    headers['Charset'] = str(msg.get_content_charset('')) or 'EMPTY'
     #TODO
     #headers['Content-Disposition'] = getMailHeader(msg.get_content_disposition()) or 'EMPTY'
     #print(getMailHeader(msg.get_charsets('') or 'EMPTY'))
-    boundary = msg.get_boundary('')
     return headers
 
-def parseBody(mailBody):
-    """Parse mail body"""
-    body = dict()
-    body['body'] = mailBody
-    return body
+def parseBody(mailBody, mailHeaders):
+    """Forward mail body to processing module ; we may need the headers for some processing"""
+    html = False if mailHeaders['Content-Type'].find("<html>") == -1 else True
+    return processBody(mailBody, mailHeaders, html)
 
