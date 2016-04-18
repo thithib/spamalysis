@@ -1,17 +1,17 @@
 #!/usr/bin/python3.4
 # _*_coding:Utf_8 _*
 
-from elasticsearch_dsl import DocType, Index, String, Date, Integer, Boolean, Float
+from elasticsearch_dsl import DocType, Index, String, Date, Integer, Boolean, Float, Nested
 from elasticsearch_dsl.connections import connections
 from elasticsearch.exceptions import ConnectionError
-from analyzers import analyseEmail
+from analyzers import emailAnalyzer
 
 class Spam(DocType):
     X_Envelope_From = Nested(
         properties={
-            'email'=String(),
-            'localpart'=String(),
-            'domain'=String()
+            'email':String(),
+            'localpart':String(),
+            'domain':String()
         }
     )
     X_Envelope_To = String()
@@ -21,9 +21,9 @@ class Spam(DocType):
     Date = Date()
     From = Nested(
         properties={
-            'email'=String(),
-            'localpart'=String(),
-            'domain'=String()
+            'email':String(),
+            'localpart':String(),
+            'domain':String()
         }
     ) 
     Reply_To = String()
@@ -56,7 +56,7 @@ def indexMail(jsonMail, indexName, nodeIP, nodePort):
         # Create a new mail and initialize it
         if (jsonMail['X-Envelope-From'] != "EMPTY"):
             newMail = Spam(X_Envelope_From=jsonMail['X-Envelope-From'])
-            analyzingResult = analyzeEmail(jsonMail['X-Envelope-From'])
+            analyzingResult = emailAnalyzer(jsonMail['X-Envelope-From'])
             newMail.X_Envelope_From.email = analyzingResult[0]
             newMail.X_Envelope_From.localpart = analyzingResult[1]
             newMail.X_Envelope_From.domain = analyzingResult[2]
@@ -68,7 +68,7 @@ def indexMail(jsonMail, indexName, nodeIP, nodePort):
             newMail.To = jsonMail['To']
         if (jsonMail['From'] != "EMPTY"):
             newMail.From = jsonMail['From']
-            analyzingResult = analyzeEmail(jsonMail['From'])
+            analyzingResult = emailAnalyzer(jsonMail['From'])
             newMail.From.email = analyzingResult[0]
             newMail.From.localpart = analyzingResult[1]
             newMail.From.domain = analyzingResult[2]
