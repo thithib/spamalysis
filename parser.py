@@ -55,7 +55,8 @@ def parseDate(date):
 def parseMail(rawMail):
     """Split headers and body and send them to the corresponding parser"""
     msg = email.message_from_string(rawMail)
-
+    #Uncomment to show all header names
+    #print(msg.keys())
     # Getting mail body requires a trick
     msgBody = str()
     if msg.is_multipart():
@@ -87,9 +88,10 @@ def parseHeaders(msg):
     headers['Content-Transfer-Encoding'] = str(getMailHeader(msg.get('Content-Transfer-Encoding', ''))) or 'EMPTY'
     headers['Content-Type'] = str(msg.get_content_type()) or 'EMPTY'
     headers['Charset'] = str(msg.get_content_charset('')) or 'EMPTY'
-    #TODO
-    #headers['Content-Disposition'] = getMailHeader(msg.get_content_disposition()) or 'EMPTY'
-    #print(getMailHeader(msg.get_charsets('') or 'EMPTY'))
+    headers['Received'] = str(msg.get_all('Received','EMPTY'))
+    #Interesting header. Can be faked and pass badely configured gateway  https://isc.sans.edu/diary/UPS+Malware+Spam+Using+Fake+SPF+Headers/17693
+    headers['Received-SPF'] = str(msg.get_all('Received-SPF','EMPTY'))
+    headers['DKIM-Signature'] = str(msg.get('DKIM-Signature','EMPTY'))
     return headers
 
 def parseBody(mailBody, mailHeaders):
