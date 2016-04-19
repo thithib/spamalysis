@@ -8,6 +8,7 @@ import email
 from email.utils import parseaddr
 from email.header import decode_header
 
+import decode
 from processer import processBody
 
 
@@ -57,17 +58,32 @@ def parseMail(rawMail):
     msg = email.message_from_string(rawMail)
     #Uncomment to show all header names
     #print(msg.keys())
-    # Getting mail body requires a trick
-    msgBody = str()
-    if msg.is_multipart():
-        for payload in msg.get_payload():
-            msgBody += str(payload.get_payload())
-    else:
-        msgBody = msg.get_payload()
 
     # Headers are directly reachable
     jsonMail = parseHeaders(msg)
-    jsonMail.update(parseBody(msgBody, jsonMail))
+
+    # Getting entire mail body is a bit harder
+    msgBody = list()
+    msgAttachments = list()
+    for part in msg.walk():
+        # multipart/* are just containers
+        if part.is_multipart():
+            continue
+        if part.get('Content-Disposition') == None:
+            decodedPart = part.get_payload()
+            if part.get("Content-Transfer-Encoding") == "quoted-printable":
+                decodedPart = decode.decode_quote_printable_part(decodedPart)
+            elif part.get("Content-Transfer-Encoding") == "base64":
+                decodedPart = decode.decode_base64_part(decodedPart)
+            if part.get_content_subtype() == "plain":
+                msgBody.append((decodedPart, False))
+            elif part.get_content_subtype() == "html":
+                msgBody.append((decodedPart, True))
+        else:
+            # It is an attachment -> TODO
+            continue
+
+    jsonMail.update(processBody(msgBody, jsonMail))
 
     return jsonMail
 
@@ -93,9 +109,4 @@ def parseHeaders(msg):
     headers['Received-SPF'] = str(msg.get_all('Received-SPF','EMPTY'))
     headers['DKIM-Signature'] = str(msg.get('DKIM-Signature','EMPTY'))
     return headers
-
-def parseBody(mailBody, mailHeaders):
-    """Forward mail body to processing module ; we may need the headers for some processing"""
-    html = False if mailHeaders['Content-Type'].find("<html>") == -1 else True
-    return processBody(mailBody, mailHeaders, html)
 
