@@ -1,19 +1,20 @@
 #!/usr/bin/python3.4
 # _*_coding:Utf_8 _*
 
-from elasticsearch_dsl import DocType, Index, String, Date, Integer, Boolean, Float, Nested, Object
+from elasticsearch_dsl import DocType, Index, String, Date, Integer, Boolean, Float, Object, GeoPoint
 from elasticsearch_dsl.connections import connections
 from elasticsearch.exceptions import ConnectionError
 from analyzers import emailAnalyzer
 
 class Spam(DocType):
     X_Envelope_From = Object(
-        properties={
-            'header':String(),
-            'email':String(),
-            'localpart':String(),
-            'domain':String()
-        }
+            properties = {
+                'email': 'string',
+                'header': 'string',
+                'localpart': 'string',
+                'domain': 'string',
+                'location': 'geo_point'
+                }
     )
     X_Envelope_To = String()
     X_Spam_Flag = Boolean()
@@ -52,11 +53,13 @@ def indexMail(jsonMail, indexName, nodeIP, nodePort):
         if (jsonMail['X-Envelope-To'] != "EMPTY"):
             newMail = Spam(X_Envelope_To=jsonMail['X-Envelope-To'])
         if (jsonMail['X-Envelope-From'] != "EMPTY" and jsonMail['X-Envelope-From'] != "<>"):
-            newMail.X_Envelope_From.header=jsonMail['X-Envelope-From']
+            newMail.X_Envelope_From.header = jsonMail['X-Envelope-From']
             analyzingResult = emailAnalyzer(jsonMail['X-Envelope-From'])
             newMail.X_Envelope_From.email = analyzingResult[0]
             newMail.X_Envelope_From.localpart = analyzingResult[1]
             newMail.X_Envelope_From.domain = analyzingResult[2]
+            if (analyzingResult[3] != ""):
+                newMail.X_Envelope_From.location = analyzingResult[3]
         if (jsonMail['X-Spam-Flag'] != "EMPTY"):
             newMail.X_Spam_Flag = jsonMail['X-Spam-Flag']
         if (jsonMail['To'] != "EMPTY"):
