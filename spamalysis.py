@@ -6,6 +6,7 @@ import os
 
 from parser import parseMail
 from indexer import indexMail
+from checkSPF import checkSpf
 
 def usage():
     print("usage " + sys.argv[0] + " <email directory> " + \
@@ -25,6 +26,7 @@ def main():
                 with open(fullFilename, 'r', encoding = "ISO-8859-1") as f:
                     rawMail = f.read()
                 jsonMail = parseMail(rawMail)
+                checkSpf(jsonMail)
                 if jsonMail:
                     if not indexMail(jsonMail, indexName, str(sys.argv[2]), str(sys.argv[3])):
                         sys.stderr.write("Error when indexing mail " + fullFilename + "\n")
