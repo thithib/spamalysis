@@ -26,9 +26,13 @@ class Spam(DocType):
     X_Priority = Integer()
     #X_Mailer = String()
     MIME_Version = String()
+    Subject = String()
     Content_Transfer_Encoding = String()
     Content_Type = String()
-    Subject = String()
+    Charset = String()
+    Received = String()
+    Received_SPF = String()
+    DKIM_Signature = String()
     #Message = String()
 
     class Meta:
@@ -74,6 +78,14 @@ def indexMail(jsonMail, indexName, nodeIP, nodePort):
             newMail.Content_Type = jsonMail['Content-Type']
         if (jsonMail['Subject'] != "EMPTY") :
             newMail.Subject = jsonMail['Subject']
+        if (jsonMail['Charset'] != "EMPTY") :
+            newMail.Charset = jsonMail['Charset']
+        if (jsonMail['Received'] != "EMPTY") :
+            newMail.Received = jsonMail['Received']
+        if (jsonMail['Received-SPF'] != "EMPTY") :
+            newMail.Received_SPF = jsonMail['Received-SPF']
+        if (jsonMail['DKIM-Signature'] != "EMPTY") :
+            newMail.DKIM_Signature = jsonMail['DKIM-Signature']
         newMail.X_Spam_Score = jsonMail['X-Spam-Score']
         newMail.Date = jsonMail['Date']
         newMail.X_Priority = jsonMail['X-Priority']

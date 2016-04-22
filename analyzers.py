@@ -13,7 +13,7 @@ def emailAnalyzer(header):
     return (email, localpart, domain, location)
 
 def locate(domain):
-    url = 'http://ip.pycox.com/json/' + domain
+    url = 'http://ip-json.rhcloud.com/json/' + domain
     headers = urllib3.make_headers()
     proxy = urllib3.ProxyManager('http://proxy.minet.net:82', proxy_headers=headers)
     r = proxy.request('GET', url)
