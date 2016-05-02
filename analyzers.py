@@ -17,6 +17,8 @@ def locate(domain):
         ip = socket.gethostbyname(domain)
         database = maxminddb.open_database('/home/spamalysis/GeoLite2-City.mmdb')
         result = database.get(ip)
+        if result == None:
+            return str()
         database.close()
         longitude = result['location']['longitude']
         latitude = result['location']['latitude']
