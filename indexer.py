@@ -9,31 +9,33 @@ from analyzers import emailAnalyzer
 class Spam(DocType):
     X_Envelope_From = Object(
             properties = {
-                'email': 'string',
-                'header': 'string',
-                'localpart': 'string',
-                'domain': 'string',
-                'location': 'geo_point'
+                'email': String(index='not_analyzed'),
+                'header': String(index='not_analyzed'),
+                'localpart': String(index='not_analyzed'),
+                'domain': String(index='not_analyzed'),
+                'location': GeoPoint()
                 }
     )
-    X_Envelope_To = String()
+    X_Envelope_To = String(index='not_analyzed')
     X_Spam_Flag = Boolean()
     X_Spam_Score = Float()
-    To = String()
+    To = String(index='not_analyzed')
     Date = Date()
-    From = String()
-    Reply_To = String()
+    From = String(index='not_analyzed')
+    Reply_To = String(index='not_analyzed')
     X_Priority = Integer()
     #X_Mailer = String()
-    MIME_Version = String()
+    MIME_Version = String(index='not_analyzed')
     Subject = String()
-    Content_Transfer_Encoding = String()
-    Content_Type = String()
-    Charset = String()
-    Received = String()
-    Received_SPF = String()
-    DKIM_Signature = String()
+    Content_Transfer_Encoding = String(index='not_analyzed')
+    Content_Type = String(index='not_analyzed')
+    Charset = String(index='not_analyzed')
+    Received = String(index='not_analyzed')
+    Received_SPF = Boolean()
+    DKIM_Signature = String(index='not_analyzed')
     #Message = String()
+    phoneNumbers = String(multi=True, index='not_analyzed')
+    URLs = String(multi=True, index='not_analyzed')
 
     class Meta:
         index = 'default_index'
@@ -83,13 +85,20 @@ def indexMail(jsonMail, indexName, nodeIP, nodePort):
         if (jsonMail['Received'] != "EMPTY") :
             newMail.Received = jsonMail['Received']
         if (jsonMail['Received-SPF'] != "EMPTY") :
-            newMail.Received_SPF = jsonMail['Received-SPF']
+            if (jsonMail['Received-SPF'] != "TRUE") :
+                newMail.Received_SPF = True
+            elif (jsonMail['Received-SPF'] != "FALSE") :
+                newMail.Received_SPF = False
         if (jsonMail['DKIM-Signature'] != "EMPTY") :
             newMail.DKIM_Signature = jsonMail['DKIM-Signature']
         newMail.X_Spam_Score = jsonMail['X-Spam-Score']
         newMail.Date = jsonMail['Date']
         newMail.X_Priority = jsonMail['X-Priority']
         newMail.MIME_Version = jsonMail['MIME-Version']
+        for phoneNumber in jsonMail['phoneNumbers'] :
+            newMail.phoneNumbers.append(phoneNumber)
+        for url in jsonMail['URLs'] :
+            newMail.URLs.append(url)
         #newMail.X_Mailer = jsonMail['X-Mailer']
         #newMail.Message = jsonMail['Message']
 

@@ -1,8 +1,8 @@
 #!/usr/bin/python3.4
 # _*_coding:Utf_8 _*
 import re
-import urllib3
-import json
+import maxminddb
+import socket
 
 def emailAnalyzer(header):
     analyzed = re.search('([\w\.-]*)@([\w\.-]*)', header)
@@ -13,15 +13,14 @@ def emailAnalyzer(header):
     return (email, localpart, domain, location)
 
 def locate(domain):
-    url = 'http://ip-json.rhcloud.com/json/' + domain
-    headers = urllib3.make_headers()
-    proxy = urllib3.ProxyManager('http://proxy.minet.net:82', proxy_headers=headers)
-    r = proxy.request('GET', url)
-    result = json.loads(str(r.data.decode('iso-8859-1')))
-    location = ""
-    if 'q' in result:
-        longitude = result['longitude']
-        latitude = result['latitude']
+    try:
+        ip = socket.gethostbyname(domain)
+        database = maxminddb.open_database('/home/spamalysis/GeoLite2-City.mmdb')
+        result = database.get(ip)
+        database.close()
+        longitude = result['location']['longitude']
+        latitude = result['location']['latitude']
         location = str(latitude) + ',' + str(longitude)
-
-    return location
+        return location
+    except socket.gaierror:
+        return str()
