@@ -13,7 +13,8 @@ class Spam(DocType):
                 'header': String(index='not_analyzed'),
                 'localpart': String(index='not_analyzed'),
                 'domain': String(index='not_analyzed'),
-                'location': GeoPoint()
+                'location': GeoPoint(),
+                'domain_type': String(index='not_analyzed')
                 }
     )
     X_Envelope_To = String(index='not_analyzed')
@@ -45,7 +46,7 @@ class Spam(DocType):
         return super().save(** kwargs)
 
 
-def indexMail(jsonMail, indexName, nodeIP, nodePort):
+def indexMail(jsonMail, indexName, nodeIP, nodePort, database):
 
     # Try connecting to the Elasticsearch node
     try:
@@ -60,10 +61,11 @@ def indexMail(jsonMail, indexName, nodeIP, nodePort):
             newMail = Spam(X_Envelope_To=jsonMail['X-Envelope-To'])
         if (jsonMail['X-Envelope-From'] != "EMPTY" and jsonMail['X-Envelope-From'] != "<>"):
             newMail.X_Envelope_From.header = jsonMail['X-Envelope-From']
-            analyzingResult = emailAnalyzer(jsonMail['X-Envelope-From'])
+            analyzingResult = emailAnalyzer(jsonMail['X-Envelope-From'], database)
             newMail.X_Envelope_From.email = analyzingResult[0]
             newMail.X_Envelope_From.localpart = analyzingResult[1]
             newMail.X_Envelope_From.domain = analyzingResult[2]
+            newMail.X_Envelope_From.domain_type = analyzingResult[4]
             if (analyzingResult[3] != ""):
                 newMail.X_Envelope_From.location = analyzingResult[3]
         if (jsonMail['X-Spam-Flag'] != "EMPTY"):

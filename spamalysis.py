@@ -7,6 +7,7 @@ import os
 from parser import parseMail
 from indexer import indexMail
 from checkSPF import checkSpf
+from database import maxmindDB
 
 def usage():
     print("usage " + sys.argv[0] + " <email directory> " + \
@@ -18,6 +19,8 @@ def main():
     if len(sys.argv) < 3:
         usage()
 
+    database = maxmindDB("/home/spamalysis/GeoLite2-City.mmdb")
+
     for root, dirs, files in os.walk(str(sys.argv[1])):
         for filename in files:
             if filename.endswith(".mail"):
@@ -28,7 +31,7 @@ def main():
                 jsonMail = parseMail(rawMail)
                 checkSpf(jsonMail)
                 if jsonMail:
-                    if not indexMail(jsonMail, indexName, str(sys.argv[2]), str(sys.argv[3])):
+                    if not indexMail(jsonMail, indexName, str(sys.argv[2]), str(sys.argv[3]), database):
                         sys.stderr.write("Error when indexing mail " + fullFilename + "\n")
                 else:
                     sys.stderr.write("Error when parsing mail " + fullFilename + "\n")
