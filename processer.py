@@ -98,11 +98,13 @@ def processAttachments(attachments):
     """
     resultAttachments = dict()
     resultAttachments['attachmentsTypes'] = list()
+    resultAttachments['attachmentsSizes'] = list()
     for name, content in attachments:
         filename = '/tmp/' + name
         with open(filename, 'wb') as f:
             f.write(content)
         resultAttachments['attachmentsTypes'].append(getAttachmentType(filename))
+        resultAttachments['attachmentsSizes'].append(getAttachmentSize(filename))
         os.remove(filename)
     return resultAttachments
 
@@ -126,4 +128,7 @@ def getAttachmentType(filename):
         return 'XML document text'
     else:
         return fileOutput[((fileOutput.find(':')) + 2):]
+
+def getAttachmentSize(filename):
+    return os.stat(filename).st_size
 
