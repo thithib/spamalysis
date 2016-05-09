@@ -9,7 +9,7 @@ from email.utils import parseaddr
 from email.header import decode_header
 
 import decode
-from processer import processBody
+from processer import processBody, processAttachments
 
 
 def getMailHeader(header_text, default="ascii"):
@@ -69,7 +69,8 @@ def parseMail(rawMail):
         # multipart/* are just containers
         if part.is_multipart():
             continue
-        if part.get('Content-Disposition') == None:
+        contentDisposition = part.get('Content-Disposition')
+        if contentDisposition == None or contentDisposition == 'inline':
             decodedPart = part.get_payload()
             if part.get("Content-Transfer-Encoding") == "quoted-printable":
                 decodedPart = decode.decode_quote_printable_part(decodedPart)
@@ -80,10 +81,11 @@ def parseMail(rawMail):
             elif part.get_content_subtype() == "html":
                 msgBody.append((decodedPart, True))
         else:
-            # It is an attachment -> TODO
-            continue
+            # It is an attachment
+            msgAttachments.append((part.get_filename(), part.get_payload(decode=True)))
 
     jsonMail.update(processBody(msgBody, jsonMail))
+    jsonMail.update(processAttachments(msgAttachments))
 
     return jsonMail
 

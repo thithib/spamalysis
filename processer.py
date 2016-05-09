@@ -1,6 +1,7 @@
 #!/usr/bin/python3.4
 # -*-coding:Utf-8 -*
 
+import os
 import re
 
 from bs4 import BeautifulSoup
@@ -88,4 +89,18 @@ def getURLsFromPlain(email_data):
     except Exception as err:
         print("ERROR - Exception when parsing plain text for urls: %s" % err)
         return []
+
+def processAttachments(attachments):
+    """
+    Conducts a basic study of e-mail attachments
+    :param attachments: list of attachments as tuples (name, content)
+    """
+    resultAttachments = dict()
+    for name, content in attachments:
+        filename = '/tmp/' + name
+        with open(filename, 'wb') as f:
+            f.write(content)
+        # Do things on the file and add results to resultAttachments dict
+        os.remove(filename)
+    return resultAttachments
 
