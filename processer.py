@@ -3,6 +3,7 @@
 
 import os
 import re
+from subprocess import check_output
 
 from bs4 import BeautifulSoup
 
@@ -96,11 +97,33 @@ def processAttachments(attachments):
     :param attachments: list of attachments as tuples (name, content)
     """
     resultAttachments = dict()
+    resultAttachments['attachmentsTypes'] = list()
     for name, content in attachments:
         filename = '/tmp/' + name
         with open(filename, 'wb') as f:
             f.write(content)
-        # Do things on the file and add results to resultAttachments dict
+        resultAttachments['attachmentsTypes'].append(getAttachmentType(filename))
         os.remove(filename)
     return resultAttachments
+
+def getAttachmentType(filename):
+    fileOutput = check_output(['file', filename]).decode('utf-8')
+    if fileOutput.find('PNG') != -1:
+        return 'PNG image'
+    elif fileOutput.find('JPEG') != -1:
+        return 'JPEG image'
+    elif fileOutput.find('Zip') != -1:
+        return 'Zip archive'
+    elif fileOutput.find('RAR') != -1:
+        return 'RAR archive'
+    elif fileOutput.find('PDF') != -1:
+        return 'PDF document'
+    elif fileOutput.find('Microsoft') != -1 and fileOutput.find('Word') != -1:
+        return 'Microsoft Word document'
+    elif fileOutput.find('ASCII') != -1:
+        return 'ASCII text'
+    elif fileOutput.find('XML') != -1:
+        return 'XML document text'
+    else:
+        return fileOutput[((fileOutput.find(':')) + 2):]
 

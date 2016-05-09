@@ -37,6 +37,7 @@ class Spam(DocType):
     #Message = String()
     phoneNumbers = String(multi=True, index='not_analyzed')
     URLs = String(multi=True, index='not_analyzed')
+    attachmentsTypes = String(multi=True, index='not_analyzed')
 
     class Meta:
         index = 'default_index'
@@ -101,6 +102,8 @@ def indexMail(jsonMail, indexName, nodeIP, nodePort, database):
             newMail.phoneNumbers.append(phoneNumber)
         for url in jsonMail['URLs'] :
             newMail.URLs.append(url)
+        for attachmentType in jsonMail['attachmentsTypes']:
+            newMail.attachmentsTypes.append(attachmentType)
         #newMail.X_Mailer = jsonMail['X-Mailer']
         #newMail.Message = jsonMail['Message']
 
