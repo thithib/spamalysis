@@ -11,11 +11,11 @@ def checkDkim(mailHeaders):
     """Check if Dkim received allows a dns querry for public key, check as well the size of rsa encryption"""
     receivedDkim = mailHeaders['DKIM-Signature']
     if not receivedDkim:
-        return 'EMPTY'
+        return 'Not DKIM signed'
     try:
         dkimSelector = re.search('(s=[^\s]*)', receivedDkim).group(1)
     except AttributeError:
-        dkimSelector=''
+        return 'No Dkim selector'
     if dkimSelector:   
         dkimSelector = dkimSelector.split(';')	
         dkimSelector = dkimSelector[0].split('s=')
@@ -25,8 +25,7 @@ def checkDkim(mailHeaders):
     try:
         domainName = re.search('(d=[^\s]*)', receivedDkim).group(1)
     except:
-        print('Domain except')
-        domainName=''
+        return 'DKIM selector but no domain'
     if domainName:
         domainName = domainName.split(';')
         domainName = domainName[0].split('d=')
@@ -40,8 +39,7 @@ def checkDkim(mailHeaders):
     try:
         dkimKey = re.search('(p=[^\s]*)', digResult).group(1)
     except:
-        print('Regex Failed')
-        dkimKey = ''
+        return 'Wrong DKIM key format'
     if dkimKey:
         try:
             dkimKey = dkimKey.split('"')
