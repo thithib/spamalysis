@@ -6,8 +6,6 @@ import os
 
 from parser import parseMail
 from indexer import indexMail
-from checkSPF import checkSpf
-from checkDKIM import checkDkim
 from database import maxmindDB
 
 def usage():
@@ -30,8 +28,6 @@ def main():
                 with open(fullFilename, 'r', encoding = "ISO-8859-1") as f:
                     rawMail = f.read()
                 jsonMail = parseMail(rawMail)
-                checkSpf(jsonMail)
-                checkDkim(jsonMail)
                 if jsonMail:
                     if not indexMail(jsonMail, indexName, str(sys.argv[2]), str(sys.argv[3]), database):
                         sys.stderr.write("Error when indexing mail " + fullFilename + "\n")

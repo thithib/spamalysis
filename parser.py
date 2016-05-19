@@ -11,6 +11,9 @@ from email.header import decode_header
 import decode
 from processer import processBody, processAttachments
 
+from checkSPF import checkSpf
+from checkDKIM import checkDkim
+
 
 def getMailHeader(header_text, default="ascii"):
     """Decode header_text if needed"""
@@ -86,6 +89,8 @@ def parseMail(rawMail):
 
     jsonMail.update(processBody(msgBody, jsonMail))
     jsonMail.update(processAttachments(msgAttachments))
+    jsonMail.update(checkSpf(jsonMail))
+    jsonMail.update(checkDkim(jsonMail))
 
     return jsonMail
 

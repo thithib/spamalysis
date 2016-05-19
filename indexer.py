@@ -32,8 +32,13 @@ class Spam(DocType):
     Content_Type = String(index='not_analyzed')
     Charset = String(index='not_analyzed')
     Received = String(index='not_analyzed')
-    Received_SPF = Boolean()
-    DKIM_Signature = String(index='not_analyzed')
+    Received_SPF = String(index = 'not_analyzed')
+    DKIM_Signature = String(index = 'not_analyzed')
+    ##### HEADERS RAJOUTES SUITE A TRAITEMENT ####
+    spfResult = String(index = 'not_analyzed')
+    dkimResult = String(index = 'not_analyzed')
+    dkimKey = String(index = 'not_analyzed')
+    #############################################
     #Message = String()
     phoneNumbers = String(multi=True, index='not_analyzed')
     URLs = String(multi=True, index='not_analyzed')
@@ -89,12 +94,13 @@ def indexMail(jsonMail, indexName, nodeIP, nodePort, database):
         if (jsonMail['Received'] != "EMPTY") :
             newMail.Received = jsonMail['Received']
         if (jsonMail['Received-SPF'] != "EMPTY") :
-            if (jsonMail['Received-SPF'] != "TRUE") :
-                newMail.Received_SPF = True
-            elif (jsonMail['Received-SPF'] != "FALSE") :
-                newMail.Received_SPF = False
+            newMail.Received_SPF = jsonMail['Received-SPF']
+            newMail.spfResult = jsonMail['spfResult']
         if (jsonMail['DKIM-Signature'] != "EMPTY") :
             newMail.DKIM_Signature = jsonMail['DKIM-Signature']
+            newMail.DKIM_Result = jsonMail['dkimResult']
+            if jsonMail['dkimResult'] != 'DKIM OK' and jsonMail['dkimKey'] != 'EMPTY':
+                newMail.DKIM_KeyLength = jsonMail['dkimKey']
         newMail.X_Spam_Score = jsonMail['X-Spam-Score']
         newMail.Date = jsonMail['Date']
         newMail.X_Priority = jsonMail['X-Priority']
