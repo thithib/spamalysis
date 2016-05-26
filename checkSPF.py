@@ -1,5 +1,5 @@
-#!/usr/bin/python3.4                                                                   
-# -*-coding:Utf-8 -*    
+#!/usr/bin/python3.4
+# -*-coding:Utf-8 -*
 
 import subprocess as sp
 import re
@@ -12,22 +12,26 @@ def checkSpf(mailHeaders):
     receivedSpf = mailHeaders['Received-SPF']
     if receivedSpf:
         spfResult = dict()
-        if re.search('(fail)',receivedSpf).group(1):
+        if re.search('Softfail', receivedSpf):
+            spfResult['spfResult'] = 'Softfail'
+            return spfResult
+        elif re.search('Fail', receivedSpf):
             spfResult['spfResult'] = 'Fail'
             return spfResult
-        elif re.search('(softfail)',receivedSpf).group(1):
-            spfResult['spfResult'] = 'softfail'
-            return 'Soft Fail'
-        elif re.search('(neutral)',receivedSpf).group(1):
-            spfResult['neutral'] = 'neutral'
+        elif re.search('Neutral',receivedSpf):
+            spfResult['spfResult'] = 'Neutral'
             return spfResult
-        elif re.search('(PermError)',receivedSpf).group(1):
-            spfResult['spfResult'] = 'PermError'
+        elif re.search('Permerror', receivedSpf):
+            spfResult['spfResult'] = 'Permerror'
             return spfResult
-        elif re.search('(TempError)',receivedSpf).group(1):
-            spfResult['spfResult'] = 'TempError'
+        elif re.search('TempError', receivedSpf):
+            spfResult['spfResult'] = 'Temperror'
             return spfResult
-        elif re.search('(pass)',receivedSpf).group(1):
+        elif re.search('None', receivedSpf):
+            spfResult['spfResult'] = 'None'
+            return spfResult
+        elif re.search('Pass', receivedSpf):
+            spfResult['spfResult'] = 'Pass'
             try:
                 senderDomain = re.search('(\@[^\s]*)', receivedSpf).group(1)
             except AttributeError:
@@ -52,35 +56,40 @@ def checkSpf(mailHeaders):
             try:
                 digResult = sp.check_output(["dig", "+short","TXT",senderDomain[0]]).decode("ascii")
             except sp.CalledProcessError:
-                return 'PassNoDig'
-            ipNetworks = re.findall( r'(([0-9]+(?:\.[0-9]+){3})+/+[0-9]{2})|([0-9]+(?:\.[0-9]+){3})', digResult )
-            results = [t[0] for t in ipNetworks]
-            #print(len(results))
-            for i, val in enumerate(results):
-                try:
-                    network = val
-                except:
-                    network = ''
-                    #print(network)
-                if not network:
-                    spfResult['spfResult'] = 'PassUnchecked'
-                    return spfResult
-                else:	
+                return spfResult
+            #ipNetworks = re.findall(r'(([0-9]{1,3}.){3}.([0-9]{1,3}))(\/\d\d)?',digResult)
+            ipNetworks = re.findall( r'(([0-9]+(?:\.[0-9]+){3})+/+[0-9]{2})|([0-9]+(?:\.[0-9]+){3})', digResult)
+            print(ipNetworks)
+            if ipNetworks != None:
+                results = [t[0] for t in ipNetworks]
+                #print(len(results))
+                for i, val in enumerate(results):
                     try:
-                        network = ipaddress.ip_network(network)
-                        if senderIp in ipaddress.ip_network(network):
-                            spfResult['spfResult'] = 'PassTrue'
-                            return spfResult
-                        else:
-                            if i == len(results):
-                                spfResult['spfResult'] = 'PassUnchecked'
+                        network = val
+                    except:
+                        network = ''
+                        #print(network)
+                    if not network:
+                        spfResult['spfResult'] = 'PassUnchecked'
+                        return spfResult
+                    else:
+                        try:
+                            network = ipaddress.ip_network(network)
+                            if senderIp in ipaddress.ip_network(network):
+                                spfResult['spfResult'] = 'PassTrue'
                                 return spfResult
-                    except ValueError:
-                        network = ipaddress.IPv6Interface(network)
-                        if senderIp in network.network:
-                            spfResult['spfResult'] = 'PassTrue'
-                            return spfResult
-                        else:
-                            if i== len(results):
-                                spfResult['spfResult'] = 'PassUnchecked'
+                            else:
+                                if i == len(results):
+                                    spfResult['spfResult'] = 'PassUnchecked'
+                                    return spfResult
+                        except ValueError:
+                            network = ipaddress.IPv6Interface(network)
+                            if senderIp in network.network:
+                                spfResult['spfResult'] = 'PassTrue'
                                 return spfResult
+                            else:
+                                if i== len(results):
+                                    spfResult['spfResult'] = 'PassUnchecked'
+                                    return spfResult
+        else:
+            return spfResult

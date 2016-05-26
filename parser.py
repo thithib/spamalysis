@@ -4,6 +4,8 @@
 import re
 from time import strptime, strftime
 
+import sys
+
 import email
 from email.utils import parseaddr
 from email.header import decode_header
@@ -30,7 +32,10 @@ def getMailHeader(header_text, default="ascii"):
         for i, (text,charset) in enumerate(headers):
             try:
                 if(charset != None):
-                    headers[i] = str(text, charset)
+                    try:
+                        headers[i] = str(text, charset)
+                    except UnicodeDecodeError:
+                        return headers[i]
                 else:
                     headers[i] = text
             except LookupError:

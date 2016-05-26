@@ -47,7 +47,7 @@ def checkDkim(mailHeaders):
         dkimKey = re.search('(p=[^\s]*)', digResult).group(1)
     except:
         dkimResult['dkimResult'] = 'DKIM OK'
-        dkimResult['dkimKey'] = 'Wrong key format'
+        dkimResult['dkimKey'] = 'EMPTY'
         return dkimResult
     if dkimKey:
         try:
@@ -97,5 +97,7 @@ def checkDkim(mailHeaders):
         except:
             dkimResult['dkimKey'] = 'EMPTY'
             return dkimResult
+        openSslResult = openSslResult[0].split('bit')
+        openSslResult[0] = int(openSslResult[0])
         dkimResult['dkimKey'] = openSslResult[0]
         return dkimResult
