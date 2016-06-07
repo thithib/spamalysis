@@ -52,3 +52,9 @@ def detect(address):
                 return "valid_domain"
             except socket.gaierror:
                 return "invalid_domain"
+
+def fetchReceived(string):
+    relays = []
+    for match in re.finditer('\[(([0-9]{1,3}.){3}.([0-9]{1,3}))\]', string):
+        relays.append(match)
+    return relays

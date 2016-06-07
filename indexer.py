@@ -4,7 +4,7 @@
 from elasticsearch_dsl import DocType, Index, String, Date, Integer, Boolean, Float, Object, GeoPoint
 from elasticsearch_dsl.connections import connections
 from elasticsearch.exceptions import ConnectionError
-from analyzers import emailAnalyzer
+from analyzers import emailAnalyzer, fetchReceived
 
 class Spam(DocType):
     X_Envelope_From = Object(
@@ -32,6 +32,7 @@ class Spam(DocType):
     Content_Type = String(index='not_analyzed')
     Charset = String(index='not_analyzed')
     Received = String(index='not_analyzed')
+    Hops = Integer()
     Received_SPF = String(index = 'not_analyzed')
     DKIM_Signature = String(index = 'not_analyzed')
     ##### HEADERS RAJOUTES SUITE A TRAITEMENT ####
@@ -54,7 +55,6 @@ class Spam(DocType):
 
 
 def indexMail(jsonMail, indexName, nodeIP, nodePort, database):
-
     # Try connecting to the Elasticsearch node
     try:
         connections.create_connection(hosts=[nodeIP+':'+str(nodePort)],timeout=3)
@@ -93,7 +93,9 @@ def indexMail(jsonMail, indexName, nodeIP, nodePort, database):
             newMail.Charset = jsonMail['Charset']
         if (jsonMail['Received'] != "EMPTY") :
             newMail.Received = jsonMail['Received']
+            newMail.Hops = len(fetchReceived(jsonMail['Received']))
         if (jsonMail.get('Received-SPF','EMPTY') != "EMPTY") :
+        #if (jsonMail['Received-SPF'] != "EMPTY"):
             newMail.Received_SPF = jsonMail['Received-SPF']
             if (jsonMail.get('spfResult','EMPTY') !='EMPTY'):
                 newMail.spfResult = jsonMail['spfResult']
