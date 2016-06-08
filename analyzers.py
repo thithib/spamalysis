@@ -9,7 +9,7 @@ def emailAnalyzer(header, database):
     localpart = analyzed.group(1)
     domain = analyzed.group(2)
     location = locate(domain, database)
-    return (email, localpart, domain, location[0], location[1])
+    return (email, localpart, domain, location[0], location[1], location[2])
 
 def locateIPv4(ip, database):
     return database.query(ip)
@@ -22,21 +22,21 @@ def locate(domain, database):
     elif domainType == "valid_domain":
         try:
             ip = socket.getaddrinfo(domain,None,socket.AF_INET6)[0][4][0]
-            return (str(), "IPv6")
+            return (str(), "IPv6", str())
         except socket.gaierror:
             ip = socket.gethostbyname(domain)
             result = locateIPv4(ip, database)
             domainType = "IPv4"
     else:
-        return (str(), domainType)
+        return (str(), domainType, str())
 
     if result == None:
-        return (str(), domainType)
-
+        return (str(), domainType, str())
+    country_code = result['registered_country']['iso_code']
     longitude = result['location']['longitude']
     latitude = result['location']['latitude']
     location = str(latitude) + ',' + str(longitude)
-    return (location, domainType)
+    return (location, domainType, country_code)
 
 def detect(address):
     try:

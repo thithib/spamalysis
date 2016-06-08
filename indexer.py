@@ -14,7 +14,8 @@ class Spam(DocType):
                 'localpart': String(index='not_analyzed'),
                 'domain': String(index='not_analyzed'),
                 'location': GeoPoint(),
-                'domain_type': String(index='not_analyzed')
+                'domain_type': String(index='not_analyzed'),
+                'country_code' : String(index='not_analyzed')
                 }
     )
     X_Envelope_To = String(index='not_analyzed')
@@ -75,6 +76,8 @@ def indexMail(jsonMail, indexName, nodeIP, nodePort, database):
             newMail.X_Envelope_From.domain_type = analyzingResult[4]
             if (analyzingResult[3] != ""):
                 newMail.X_Envelope_From.location = analyzingResult[3]
+            if (analyzingResult[5] != ""):
+                newMail.X_Envelope_From.country_code = analyzingResult[5]
         if (jsonMail['X-Spam-Flag'] != "EMPTY"):
             newMail.X_Spam_Flag = jsonMail['X-Spam-Flag']
         if (jsonMail['To'] != "EMPTY"):
