@@ -3,6 +3,9 @@
 import re
 import socket
 
+def headerSanitizer(header):
+    return re.findall('[\w\.-]*@[\w\.-]*', header)
+
 def emailAnalyzer(header, database):
     analyzed = re.search('([\w\.-]*)@([\w\.-]*)', header)
     email = analyzed.group()
@@ -54,7 +57,4 @@ def detect(address):
                 return "invalid_domain"
 
 def fetchReceived(string):
-    relays = []
-    for match in re.finditer('\[(([0-9]{1,3}.){3}.([0-9]{1,3}))\]', string):
-        relays.append(match)
-    return relays
+    return re.findall('\[(([0-9]{1,3}.){3}.([0-9]{1,3}))\]', string):

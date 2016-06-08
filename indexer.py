@@ -4,7 +4,7 @@
 from elasticsearch_dsl import DocType, Index, String, Date, Integer, Boolean, Float, Object, GeoPoint
 from elasticsearch_dsl.connections import connections
 from elasticsearch.exceptions import ConnectionError
-from analyzers import emailAnalyzer, fetchReceived
+from analyzers import emailAnalyzer, fetchReceived, headerSanitizer
 
 class Spam(DocType):
     X_Envelope_From = Object(
@@ -21,7 +21,7 @@ class Spam(DocType):
     X_Envelope_To = String(index='not_analyzed')
     X_Spam_Flag = Boolean()
     X_Spam_Score = Float()
-    To = String(index='not_analyzed')
+    To = String(multi=True, index='not_analyzed')
     Date = Date()
     From = String(index='not_analyzed')
     Reply_To = String(index='not_analyzed')
@@ -81,7 +81,8 @@ def indexMail(jsonMail, indexName, nodeIP, nodePort, database):
         if (jsonMail['X-Spam-Flag'] != "EMPTY"):
             newMail.X_Spam_Flag = jsonMail['X-Spam-Flag']
         if (jsonMail['To'] != "EMPTY"):
-            newMail.To = jsonMail['To']
+            for mail in headerSanitizer(jsonMail['To']):
+                newMail.To.append(mail)
         if (jsonMail['From'] != "EMPTY"):
             newMail.From = jsonMail['From']
         if (jsonMail['Reply-To'] != "EMPTY"):
@@ -98,7 +99,6 @@ def indexMail(jsonMail, indexName, nodeIP, nodePort, database):
             newMail.Received = jsonMail['Received']
             newMail.Hops = len(fetchReceived(jsonMail['Received']))
         if (jsonMail.get('Received-SPF','EMPTY') != "EMPTY") :
-        #if (jsonMail['Received-SPF'] != "EMPTY"):
             newMail.Received_SPF = jsonMail['Received-SPF']
             if (jsonMail.get('spfResult','EMPTY') !='EMPTY'):
                 newMail.spfResult = jsonMail['spfResult']
