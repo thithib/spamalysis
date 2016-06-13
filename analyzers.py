@@ -57,4 +57,4 @@ def detect(address):
                 return "invalid_domain"
 
 def fetchReceived(string):
-    return re.findall('\[(([0-9]{1,3}.){3}.([0-9]{1,3}))\]', string):
+    return re.findall('\[(([0-9]{1,3}.){3}.([0-9]{1,3}))\]', string)
