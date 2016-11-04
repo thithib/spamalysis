@@ -14,6 +14,26 @@ def emailAnalyzer(header, database):
     location = locate(domain, database)
     return (email, localpart, domain, location[0], location[1], location[2])
 
+def emailAnalyzerReceived(header, database):
+    res = header.rsplit('from', 2)[-1]
+    analyzed = re.search('([^\s]+)', res)
+    domain = analyzed.group()
+    location = locate(domain, database)
+    return (domain, location[0], location[1])
+
+def getDate(header):
+    if isinstance(header, str):
+        res = header.rsplit('from', 2)[-1]
+        analyzed = re.search('((?:Mon?|Tue?|Wed?|Thu?|Fri?|Sat?|Sun?),.*)', res)
+        if analyzed:
+            date = analyzed.group(0)
+            date = date.split('\'')
+            return date[0]
+        else:
+            return 'EMPTY'
+    else:
+        return 'EMPTY'
+
 def locateIPv4(ip, database):
     return database.query(ip)
 

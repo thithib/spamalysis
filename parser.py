@@ -21,7 +21,7 @@ def getMailHeader(header_text, default="ascii"):
     """Decode header_text if needed"""
     try:
         if not header_text:
-            return False
+            return False 
         else:
             headers = decode_header(header_text)
     except email.Errors.Header.ParseError:

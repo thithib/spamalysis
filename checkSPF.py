@@ -70,26 +70,26 @@ def checkSpf(mailHeaders):
                         network = ''
                         #print(network)
                     if not network:
-                        spfResult['spfResult'] = 'PassUnchecked'
+                        spfResult['spfResult'] = 'Pass'
                         return spfResult
                     else:
                         try:
                             network = ipaddress.ip_network(network)
                             if senderIp in ipaddress.ip_network(network):
-                                spfResult['spfResult'] = 'PassTrue'
+                                spfResult['spfTrue'] = 'True'
                                 return spfResult
                             else:
                                 if i == len(results):
-                                    spfResult['spfResult'] = 'PassUnchecked'
+                                    spfResult['spfTrue'] = 'False'
                                     return spfResult
                         except ValueError:
                             network = ipaddress.IPv6Interface(network)
                             if senderIp in network.network:
-                                spfResult['spfResult'] = 'PassTrue'
+                                spfResult['spfTrue'] = 'True'
                                 return spfResult
                             else:
                                 if i== len(results):
-                                    spfResult['spfResult'] = 'PassUnchecked'
+                                    spfResult['spfTrue'] = 'False'
                                     return spfResult
         else:
             return spfResult

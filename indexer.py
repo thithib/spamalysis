@@ -4,8 +4,7 @@
 from elasticsearch_dsl import DocType, Index, String, Date, Integer, Boolean, Float, Object, GeoPoint
 from elasticsearch_dsl.connections import connections
 from elasticsearch.exceptions import ConnectionError
-from analyzers import emailAnalyzer, fetchReceived, headerSanitizer
-
+from analyzers import emailAnalyzer, fetchReceived, headerSanitizer,emailAnalyzerReceived,getDate
 class Spam(DocType):
     X_Envelope_From = Object(
             properties = {
@@ -38,6 +37,7 @@ class Spam(DocType):
     DKIM_Signature = String(index = 'not_analyzed')
     ##### HEADERS RAJOUTES SUITE A TRAITEMENT ####
     spfResult = String(index = 'not_analyzed')
+    spfTrue = String(index = 'not_analyzed')
     DKIM_Result = String(index = 'not_analyzed')
     DKIM_KeyLength = Integer()
     #############################################
@@ -67,7 +67,7 @@ def indexMail(jsonMail, indexName, nodeIP, nodePort, database):
         # Create a new mail and initialize it
         if (jsonMail['X-Envelope-To'] != "EMPTY"):
             newMail = Spam(X_Envelope_To=jsonMail['X-Envelope-To'])
-        if (jsonMail['X-Envelope-From'] != "EMPTY" and jsonMail['X-Envelope-From'] != "<>"):
+        if (jsonMail['X-Envelope-From'] != "EMPTY" and jsonMail['X-Envelope-From'] != "<>" and jsonMail['X-Envelope-From'] != 'False'):
             newMail.X_Envelope_From.header = jsonMail['X-Envelope-From']
             analyzingResult = emailAnalyzer(jsonMail['X-Envelope-From'], database)
             newMail.X_Envelope_From.email = analyzingResult[0]
@@ -98,17 +98,29 @@ def indexMail(jsonMail, indexName, nodeIP, nodePort, database):
         if (jsonMail['Received'] != "EMPTY") :
             newMail.Received = jsonMail['Received']
             newMail.Hops = len(fetchReceived(jsonMail['Received']))
+            if(jsonMail['X-Envelope-From'] == 'EMPTY' or jsonMail['X-Envelope-From'] == '<>' or jsonMail['X-Envelope-From'] == 'False'):
+                analyzingResult = emailAnalyzerReceived(jsonMail['Received'], database)
+                newMail.X_Envelope_From.domain = analyzingResult[0]
+                newMail.X_Envelope_From.domain_type = analyzingResult[2]
+                if (analyzingResult[1] != ""):
+                    newMail.X_Envelope_From.location = analyzingResult[1]
         if (jsonMail.get('Received-SPF','EMPTY') != "EMPTY") :
             newMail.Received_SPF = jsonMail['Received-SPF']
-            if (jsonMail.get('spfResult','EMPTY') !='EMPTY'):
+            if (jsonMail.get('spfResult','EMPTY') != 'EMPTY'):
                 newMail.spfResult = jsonMail['spfResult']
+            if(jsonMail.get('spfTrue','EMPTY') != 'EMPTY'):
+                newMail.spfTrue = jsonMail['spfTrue']
         if (jsonMail['DKIM-Signature'] != "EMPTY") :
             newMail.DKIM_Signature = jsonMail['DKIM-Signature']
             newMail.DKIM_Result = jsonMail['dkimResult']
             if jsonMail['dkimResult'] == 'DKIM OK' and jsonMail.get('dkimKey','EMPTY') != 'EMPTY':
                 newMail.DKIM_KeyLength = jsonMail['dkimKey']
         newMail.X_Spam_Score = jsonMail['X-Spam-Score']
-        newMail.Date = jsonMail['Date']
+        if(jsonMail['Date'] != '' and jsonMail['Date'] != 'EMPTY'):
+            newMail.Date = jsonMail['Date']
+        else:
+            if (getDate(jsonMail['Received']) !='EMPTY'):
+                newMail.Date = getDate(jsonMail['Received'])
         newMail.X_Priority = jsonMail['X-Priority']
         newMail.MIME_Version = jsonMail['MIME-Version']
         for phoneNumber in jsonMail['phoneNumbers'] :
