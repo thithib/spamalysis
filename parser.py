@@ -2,26 +2,17 @@
 # -*-coding:Utf-8 -*
 
 import re
-from time import strptime, strftime
-
-import sys
-
 import email
+from time import strptime, strftime
 from email.utils import parseaddr
 from email.header import decode_header
-
-import decode
-from processer import processBody, processAttachments
-
-from checkSPF import checkSpf
-from checkDKIM import checkDkim
 
 
 def getMailHeader(header_text, default="ascii"):
     """Decode header_text if needed"""
     try:
         if not header_text:
-            return False 
+            return False
         else:
             headers = decode_header(header_text)
     except email.Errors.Header.ParseError:
@@ -32,10 +23,7 @@ def getMailHeader(header_text, default="ascii"):
         for i, (text,charset) in enumerate(headers):
             try:
                 if(charset != None):
-                    try:
-                        headers[i] = str(text, charset)
-                    except UnicodeDecodeError:
-                        return headers[i]
+                    headers[i] = str(text, charset)
                 else:
                     headers[i] = text
             except LookupError:
@@ -64,61 +52,55 @@ def parseDate(date):
 def parseMail(rawMail):
     """Split headers and body and send them to the corresponding parser"""
     msg = email.message_from_string(rawMail)
-    #Uncomment to show all header names
-    #print(msg.keys())
+    print(msg.keys())
+    # Getting mail body requires a trick
+    msgBody = str()
+    if msg.is_multipart():
+        for payload in msg.get_payload():
+            msgBody += str(payload.get_payload())
+    else:
+        msgBody = msg.get_payload()
 
     # Headers are directly reachable
     jsonMail = parseHeaders(msg)
-
-    # Getting entire mail body is a bit harder
-    msgBody = list()
-    msgAttachments = list()
-    for part in msg.walk():
-        # multipart/* are just containers
-        if part.is_multipart():
-            continue
-        contentDisposition = part.get('Content-Disposition')
-        if contentDisposition == None or contentDisposition == 'inline':
-            decodedPart = part.get_payload()
-            if part.get("Content-Transfer-Encoding") == "quoted-printable":
-                decodedPart = decode.decode_quote_printable_part(decodedPart)
-            elif part.get("Content-Transfer-Encoding") == "base64":
-                decodedPart = decode.decode_base64_part(decodedPart)
-            if part.get_content_subtype() == "plain":
-                msgBody.append((decodedPart, False))
-            elif part.get_content_subtype() == "html":
-                msgBody.append((decodedPart, True))
-        else:
-            # It is an attachment
-            msgAttachments.append((part.get_filename(), part.get_payload(decode=True)))
-
-    jsonMail.update(processBody(msgBody, jsonMail))
-    jsonMail.update(processAttachments(msgAttachments))
-    jsonMail.update(checkSpf(jsonMail))
-    jsonMail.update(checkDkim(jsonMail))
+    jsonMail.update(parseBody(msgBody))
 
     return jsonMail
 
 def parseHeaders(msg):
     """Parse mail headers into a dictionnary"""
     headers = dict()
-    headers['X-Envelope-From'] = str(getMailHeader(msg.get('X-Envelope-From', ''))) or 'EMPTY'
-    headers['X-Envelope-To'] = str(getMailHeader(msg.get('X-Envelope-TO', ''))) or 'EMPTY'
-    headers['X-Spam-Flag'] = str(getMailHeader(msg.get('X-Spam-Flag', ''))) or 'EMPTY'
+    headers['X-Envelope-From'] = getMailHeader(msg.get('X-Envelope-From', '')) or 'EMPTY'
+    headers['X-Envelope-To'] = getMailHeader(msg.get('X-Envelope-TO', '')) or 'EMPTY'
+    headers['X-Spam-Flag'] = getMailHeader(msg.get('X-Spam-Flag', '')) or 'EMPTY'
     headers['X-Spam-Score'] = float(getMailHeader(msg.get('X-Spam-Score', '')))
-    headers['To'] = str(getMailHeader(msg.get('To', ''))) or 'EMPTY'
-    headers['Date'] = parseDate(str(getMailHeader(msg.get('Date', ''))))
+    headers['To'] = getMailHeader(msg.get('To', '')) or 'EMPTY'
+    headers['Date'] = parseDate(getMailHeader(msg.get('Date', '')))
     headers['From'] = str(getMailHeader(msg.get('From', '')) or 'EMPTY')
     headers['Reply-To'] = str(getMailHeader(msg.get('Reply-To', '')) or 'EMPTY')
     headers['X-Priority'] = int((getMailHeader(msg.get('X-Priority', '')) or '0')[0])
     headers['MIME-Version'] = str(getMailHeader(msg.get('MIME-Version', '')))
-    headers['Subject'] = str(getMailHeader(msg.get('Subject', ''))) or 'EMPTY'
-    headers['Content-Transfer-Encoding'] = str(getMailHeader(msg.get('Content-Transfer-Encoding', ''))) or 'EMPTY'
-    headers['Content-Type'] = str(msg.get_content_type()) or 'EMPTY'
-    headers['Charset'] = str(msg.get_content_charset('')) or 'EMPTY'
-    headers['Received'] = str(msg.get_all('Received','EMPTY'))
-    #Interesting header. Can be faked and pass badely configured gateway  https://isc.sans.edu/diary/UPS+Malware+Spam+Using+Fake+SPF+Headers/17693
-    headers['Received-SPF'] = str(msg.get_all('Received-SPF','EMPTY'))
+    headers['Subject'] = getMailHeader(msg.get('Subject', '')) or 'EMPTY'
+    headers['Content-Transfer-Encoding'] = getMailHeader(msg.get('Content-Transfer-Encoding', '')) or 'EMPTY'
+    headers['Content-Type'] = getMailHeader(msg.get_content_type()) or 'EMPTY'
+    headers['Charset'] = getMailHeader(msg.get_content_charset('')) or 'EMPTY'
+    headers['Received'] = str(msg.get_all('Received'))
+    headers['Received-SPF'] = str(msg.get_all('Received-SPF','EMPTY')) #INTERESTING HEADER, Can be faked for badely configured gateway https://isc.sans.edu/diary/UPS+Malware+Spam+Using+Fake+SPF+Headers/17693
     headers['DKIM-Signature'] = str(msg.get('DKIM-Signature','EMPTY'))
+    #print(headers['DKIM-Signature'])
+    #print(headers['Received-SPF'])
+    
+    #TODO
+    #headers['Content-Disposition'] = msg.get_content_disposition(msg) or 'EMPTY'
+    #headers['Charsets'] = msg.get_charsets()
+    #print(toto)
+    #print(msg.get_all('Received'))
+    boundary = msg.get_boundary('')
     return headers
+
+def parseBody(mailBody):
+    """Parse mail body"""
+    body = dict()
+    body['body'] = mailBody
+    return body
 
